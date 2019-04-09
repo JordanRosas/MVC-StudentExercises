@@ -21,7 +21,7 @@ namespace StudentExercisesMVC.Models
         public string slackHandle { get; set; }
         public string CohortName { get; set; }
         public int CohortId { get; set; }
-
+        public Cohort Cohort { get; set; }
         public List<Cohort> Cohorts { get; set; } = new List<Cohort>();
     }
 }

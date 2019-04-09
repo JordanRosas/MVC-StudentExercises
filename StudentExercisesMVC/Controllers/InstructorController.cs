@@ -137,23 +137,55 @@ namespace StudentExercisesMVC.Controllers
         // GET: Instructor/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            Instructor instructor = GetInstructorById(id);
+            if(instructor == null)
+            {
+                return NotFound();
+            }
+            InstructorEditViewModel viewModel = new InstructorEditViewModel
+            {
+                Cohorts = GetAllCohorts(),
+                Instructor = instructor
+            };
+
+            return View(viewModel);
         }
 
         // POST: Instructor/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(int id, InstructorEditViewModel viewModel)
         {
             try
             {
                 // TODO: Add update logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using(SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"UPDATE Instructors 
+                                            SET FirstName = @FirstName,
+                                                LastName = @LastName,
+                                                SlackHandle = @SlackHandle,
+                                                CohortId = @CohortId
+                                            Where id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
+                        cmd.Parameters.Add(new SqlParameter("@FirstName", viewModel.Instructor.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@LastName", viewModel.Instructor.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@SlackHandle", viewModel.Instructor.slackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@CohortId", viewModel.Instructor.CohortId));
 
-                return RedirectToAction(nameof(Index));
+                        cmd.ExecuteNonQuery();
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
             }
             catch
             {
-                return View();
+                viewModel.Cohorts = GetAllCohorts();
+                return View(viewModel);
             }
         }
 
@@ -179,6 +211,50 @@ namespace StudentExercisesMVC.Controllers
                 return View();
             }
         }
+        private Instructor GetInstructorById(int id)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT i.Id AS InstructorId,
+                                               i.FirstName, i.LastName, 
+                                               i.SlackHandle, i.CohortId,
+                                               c.Name AS CohortName
+                                          FROM Instructors i LEFT JOIN Cohort c on i.cohortid = c.id
+                                         WHERE  i.Id = @id";
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    Instructor instructor = null;
+
+                    if (reader.Read())
+                    {
+                        instructor = new Instructor
+                        {
+                            id = reader.GetInt32(reader.GetOrdinal("InstructorId")),
+                            FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                            LastName = reader.GetString(reader.GetOrdinal("LastName")),
+                            slackHandle = reader.GetString(reader.GetOrdinal("SlackHandle")),
+                            CohortId = reader.GetInt32(reader.GetOrdinal("CohortId")),
+                            Cohort = new Cohort
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("CohortId")),
+                                cohortName = reader.GetString(reader.GetOrdinal("CohortName")),
+                            }
+                        };
+                    }
+
+                    reader.Close();
+
+                    return instructor;
+                }
+            }
+
+        }
+
+
         private List<Cohort> GetAllCohorts()
         {
             using (SqlConnection conn = Connection)
