@@ -192,24 +192,38 @@ namespace StudentExercisesMVC.Controllers
         // GET: Instructor/Delete/5
         public ActionResult Delete(int id)
         {
-            return View();
+            Instructor instructor = GetInstructorById(id);
+            if (instructor == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return View(instructor);
+            }
+
+            
         }
 
         // POST: Instructor/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public ActionResult Delete(int id, Instructor instructor)
         {
-            try
-            {
                 // TODO: Add delete logic here
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"Delete from Instructors where id = @id";
+                        cmd.Parameters.Add(new SqlParameter("@id", id));
 
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+                        cmd.ExecuteNonQuery();
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
+
         }
         private Instructor GetInstructorById(int id)
         {
