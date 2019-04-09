@@ -20,7 +20,7 @@ namespace StudentExercisesMVC.Models
         public int cohortId { get; set; }
 
 
-        public Cohort cohort { get; set; } = new Cohort();
+        public Cohort Cohort { get; set; } = new Cohort();
         public List<Exercise> Exercises { get; set; } = new List<Exercise>();
     }
 }
